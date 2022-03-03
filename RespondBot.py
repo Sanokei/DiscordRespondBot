@@ -19,7 +19,7 @@ class Client(discord.Client):
             return
         response = openai.Completion.create(
             engine="text-davinci-001",
-            prompt="The following is a conversation with a friend. The friend is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nFriend: hi hi im good :3 \nHuman: ",
+            prompt=f"{config.prompt} {message.content}",
             temperature=0.9,
             max_tokens=300,
             top_p=1,
