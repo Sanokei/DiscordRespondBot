@@ -19,13 +19,13 @@ class Client(discord.Client):
             return
         response = openai.Completion.create(
             engine="text-davinci-001",
-            prompt=f"{config.prompt} {message.content}",
+            prompt=f"This is a conversation between a Human and a Friend.\n{config.prompt}\nFriend:{message.content}\nHuman:",
             temperature=0.9,
             max_tokens=300,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0.6,
-            stop=[" Human:", " Friend:"]
+            stop=[" Friend:"," Human:"]
         )
         await message.channel.send(response.choices[0].text)
         
