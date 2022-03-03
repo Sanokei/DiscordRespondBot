@@ -34,7 +34,7 @@ async def on_message(message):
         response = openai.Completion.create(
             engine="text-davinci-001",
             prompt=f"This is a conversation between a Human and a Friend.\n{all_text}\nFriend:{text}\nHuman:",
-            temperature=2,
+            temperature=1,
             max_tokens=300,
             top_p=1,
             frequency_penalty=0,
