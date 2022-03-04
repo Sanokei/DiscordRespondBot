@@ -7,6 +7,7 @@ from nextcord.ext import commands
 from spacy.lang.en import English
 import openai
 import random
+import re
 
 client = commands.Bot(command_prefix=commands.when_mentioned_or("!"))
 pf = ProfanityFilter()
@@ -56,18 +57,20 @@ def get_formatted_chat(message, ctx):
     return output
 
 def get_history_by_channel(channel):
-    if channel in message_history:
-        return message_history[channel]
-    else:
-        return [""]*10
+    global message_history
+    if not channel in message_history:
+        message_history[channel] = [""]*10
+    return message_history[channel]
     
 def replace_ats(message):
-    t = message.content.replace(bot.user.mention, '')
-        if(">" in t and "<" in t and "@" in t):
-            text = t.split(">")[1]
-        else:
-            text = t
-        return text
+    t = message.content.replace(client.user.mention, '')
+    match = re.search(r'<@!*&*[0-9]+>', t)
+    if not match == None:
+        temp = t.split(">")
+        text = ">".join(temp[1:])
+    else:
+        text = t
+    return text
     
 @client.event
 async def on_connect():
@@ -87,15 +90,16 @@ async def history(ctx):
 @client.command()
 async def reset(ctx):
     global message_history
-    message_history[ctx.channel.id] = [""] * len(get_formatted_chat(ctx.channel.id))
+    message_history[ctx.channel.id] = [""] * len(get_history_by_channel(ctx.channel.id))
     await ctx.send("Memories reset")
     
 @client.command()
-async def memory(ctx, limit):
+async def memory(ctx, *, limit):
     global message_history
-    difference = int(limit) - len(get_formatted_chat(ctx.channel.id))
+    difference = int(limit) - len(get_history_by_channel(ctx.channel.id))
     if difference > 0:
-        message_history[ctx.channel.id].append([""] * difference)
+        for i in range(difference):
+            message_history[ctx.channel.id].append("")
     elif difference < 0:
         message_history[ctx.channel.id] = message_history[ctx.channel.id][:int(limit)]
     
@@ -103,40 +107,40 @@ async def memory(ctx, limit):
     
 @client.event
 async def on_message(ctx):
-    
-    message = pf.censor(ctx.content)
+    message = pf.censor(replace_ats(ctx))
     
     if ctx.author.bot:
         return
-    if not client.user.mentioned_in(message):
-        await client.process_commands(message)  
+    if not client.user.mentioned_in(ctx):
+        await client.process_commands(ctx)  
         return
     
     #Fake Typing Effect
-    ctx.typing() 
-    
-    print(f"{ctx.author.name}#{ctx.author.discriminator} said: {message}")
-    
-    username_history = filter(lambda usrlist : list(dict.fromkeys(usrlist)), username_history.append(ctx.author.name))
-    
-    temperature = random.uniform(0.8, 1.0)
-    response = openai.Completion.create(
-        engine="text-davinci-001",
-        prompt=f"The following is a conversation with a group of friends. {prompt}\n{get_formatted_chat(message, ctx)}",
-        temperature=temperature,
-        max_tokens=300,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0.6,
-        stop=username_history
-    )
-    
-    doc = npl(response.choices[0].text)
-    sents = [sent.string.strip() for sent in doc.sents]
-    
-    scroll_array(f"{ctx.author.name}: {message}", ctx.channel.id)
-    scroll_array(sents[0], ctx.channel.id)
-    
+    async with ctx.channel.typing():
+        global username_history
+        print(f"{ctx.author.name}#{ctx.author.discriminator} said: {message}")
+        
+        if not ctx.author.name in username_history:
+            username_history.append(ctx.author.name)
+        
+        temperature = random.uniform(0.8, 1.0)
+        response = openai.Completion.create(
+            engine="text-davinci-001",
+            prompt=f"The following is a conversation with a group of friends. {prompt}\n{get_formatted_chat(message, ctx)}",
+            temperature=temperature,
+            max_tokens=300,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0.6,
+            stop=username_history
+        )
+        
+        doc = npl(response.choices[0].text)
+        sents = [sent.string.strip() for sent in doc.sents]
+        
+        scroll_array(f"{ctx.author.name}: {message}", ctx.channel.id)
+        scroll_array(sents[0], ctx.channel.id)
+        
     await ctx.reply(response.choices[0].text)
     
 client.run(token)
