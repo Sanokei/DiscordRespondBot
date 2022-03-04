@@ -1,8 +1,8 @@
 # Discord Respond Bot
 Uses GPT-3 to allow you to talk to a version of yourself using GPT-3
 
-Create a config.py file with two variables
-```python
+Edit the config.cfg
+```cfg
 token = "discord api token"
 api_key = "Open AI API key"
 prompt = "about yourself using the \'Friend:\'\'Human:\' keywords. You are the Human"
