@@ -1,2 +1,3 @@
-config.py
-convo.txt
+config.cfg
+venv
+__pycache__
