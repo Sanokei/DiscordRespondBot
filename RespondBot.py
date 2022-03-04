@@ -11,6 +11,7 @@ import random
 client = commands.Bot(command_prefix=commands.when_mentioned_or("!"))
 pf = ProfanityFilter()
 message_history = {}
+username_history = []
 npl = English()
 sbd = npl.create_pipe("sentencizer")
 npl.add_pipe(sbd)
@@ -21,6 +22,7 @@ config.read('config.cfg')
 openai.api_key = config['keys']['openai']
 token = config['keys']['discord']
 bot_name = config['bot']['name']
+prompt = config['bot']['prompt']
 
 def scroll_array(new, channel):
     #Adds the new message to the beginning and removes the last message from the array
@@ -58,13 +60,22 @@ def get_history_by_channel(channel):
         return message_history[channel]
     else:
         return [""]*10
-
+    
+def replace_ats(message):
+    t = message.content.replace(bot.user.mention, '')
+        if(">" in t and "<" in t and "@" in t):
+            text = t.split(">")[1]
+        else:
+            text = t
+        return text
+    
 @client.event
 async def on_connect():
     print(f"""
         Client has successfully logged in as {client.user.name}#{client.user.discriminator}
         Your discord ID is {client.user.id}
     """)
+    username_history.append(bot_name)
     
 @client.command()
 async def history(ctx):
@@ -90,28 +101,34 @@ async def memory(ctx, limit):
     
     await ctx.send(f"Memory limit set to {len(message_history[ctx.channel.id])}")
     
-@client.command()
-async def message(ctx, *, message):
+@client.event
+async def on_message(ctx):
+    
+    message = pf.censor(ctx.content)
+    
+    if ctx.author.bot:
+        return
+    if not client.user.mentioned_in(message):
+        await client.process_commands(message)  
+        return
+    
     #Fake Typing Effect
     ctx.typing() 
-
+    
     print(f"{ctx.author.name}#{ctx.author.discriminator} said: {message}")
-
-    censored_message = pf.censor(message)
-    if censored_message != message:
-        print("Got censored")
-        message = censored_message
+    
+    username_history = filter(lambda usrlist : list(dict.fromkeys(usrlist)), username_history.append(ctx.author.name))
     
     temperature = random.uniform(0.8, 1.0)
     response = openai.Completion.create(
         engine="text-davinci-001",
-        prompt=f"The following is a conversation with a group of friends. \n{get_formatted_chat(message, ctx)}",
+        prompt=f"The following is a conversation with a group of friends. {prompt}\n{get_formatted_chat(message, ctx)}",
         temperature=temperature,
         max_tokens=300,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0.6,
-        stop=[f" {ctx.author.name}:", f" {bot_name}:"]
+        stop=username_history
     )
     
     doc = npl(response.choices[0].text)
@@ -119,6 +136,7 @@ async def message(ctx, *, message):
     
     scroll_array(f"{ctx.author.name}: {message}", ctx.channel.id)
     scroll_array(sents[0], ctx.channel.id)
+    
     await ctx.reply(response.choices[0].text)
     
 client.run(token)
