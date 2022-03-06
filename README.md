@@ -2,12 +2,18 @@
 Uses GPT-3 to allow you to talk to a version of yourself using GPT-3
 
 Edit the config.cfg
+```txt
+[keys]
+openai = Open AI API key
+discord = discord api token
+
+[bot]
+name = name the bot
+prompt = about yourself using the 'Friend:' 'Human:' keywords. You are the Human
+```
 ```python
-token = "discord api token"
-api_key = "Open AI API key"
-prompt = "about yourself using the \'Friend:\'\'Human:\' keywords. You are the Human"
 # the prompt already has the filler
-# 'This is a conversation between a Human and a Friend.'
+# 'This is a conversation between a Human and Friends.'
 
 # what you really need to do is add info about yourself then add
 # example text for what you would say
