@@ -9,7 +9,7 @@ discord = discord api token
 
 [bot]
 name = name the bot
-prompt = about yourself using the 'Friend:' 'Human:' keywords. You are the Human
+prompt = about yourself using the 'Friend:' '{Bot Name}:' keywords. Use the bot name you have choosen
 ```
 ```python
 # the prompt already has the filler
