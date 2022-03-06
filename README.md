@@ -2,7 +2,7 @@
 Uses GPT-3 to allow you to talk to a version of yourself using GPT-3
 
 Edit the config.cfg
-```cfg
+```python
 token = "discord api token"
 api_key = "Open AI API key"
 prompt = "about yourself using the \'Friend:\'\'Human:\' keywords. You are the Human"
